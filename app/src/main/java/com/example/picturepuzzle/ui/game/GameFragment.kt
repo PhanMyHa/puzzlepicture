@@ -10,13 +10,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.picturepuzzle.R
 import com.example.picturepuzzle.databinding.FragmentGameBinding
+import com.example.picturepuzzle.ui.dialog.WinDialogFragment
+import com.example.picturepuzzle.utils.SoundManager
+import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.IOException
-
+@AndroidEntryPoint
 class GameFragment : Fragment() {
 
     private var _binding: FragmentGameBinding? = null
@@ -24,6 +30,8 @@ class GameFragment : Fragment() {
 
     private val viewModel: GameViewModel by viewModels()
     private lateinit var tileAdapter: TileAdapter
+
+    private lateinit var soundManager: SoundManager
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -43,36 +51,52 @@ class GameFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        soundManager = SoundManager(requireContext())
+
         setupRecyclerView()
         setupObservers()
         setupListeners()
 
-        loadDefaultImage()
+        arguments?.let { args ->
+            val imageRes = args.getInt("imageRes", -1)
+            val imageId = args.getInt("imageId", -1)
+            val gridSize = args.getInt("gridSize", 3)
+
+            if (imageRes != -1 && imageId != -1) {
+                viewModel.setCurrentImageId(imageId)
+
+                val bitmap = BitmapFactory.decodeResource(resources, imageRes)
+                viewModel.setImageBitmap(bitmap, gridSize)
+
+                binding.buttonGridSize.visibility = View.GONE
+            } else {
+                loadDefaultImage()
+
+                binding.buttonGridSize.visibility = View.VISIBLE
+            }
+
+        } ?: run {
+            loadDefaultImage()
+            binding.buttonGridSize.visibility = View.VISIBLE
+        }
     }
 
     private fun setupRecyclerView() {
         tileAdapter = TileAdapter { position ->
+            soundManager.playClickSound()
             viewModel.rotateTile(position)
         }
 
         binding.recyclerViewTiles.apply {
-            layoutManager = GridLayoutManager(requireContext(), 3).apply {
+            layoutManager = GridLayoutManager(requireContext(), 6).apply {
                 setHasFixedSize(true)
-                // Loại bỏ spacing giữa các items
-                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                    override fun getSpanSize(position: Int): Int = 1
-                }
             }
             adapter = tileAdapter
             setHasFixedSize(true)
             setItemViewCacheSize(20)
             itemAnimator = null
-
-            // Loại bỏ mọi decoration/divider mặc định
             setPadding(0, 0, 0, 0)
             clipToPadding = false
-
-            // Loại bỏ overscroll effect
             overScrollMode = View.OVER_SCROLL_NEVER
         }
     }
@@ -80,6 +104,26 @@ class GameFragment : Fragment() {
     private fun setupObservers() {
         viewModel.tiles.observe(viewLifecycleOwner) { tiles ->
             tileAdapter.submitList(tiles)
+        }
+
+        viewModel.hintTiles.observe(viewLifecycleOwner) { hints ->
+            tileAdapter.setHintTiles(hints)
+        }
+
+        viewModel.wrongTilesCount.observe(viewLifecycleOwner) { count ->
+            binding.textWrongTiles.text = "Wrong: $count"
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.progressBar.isVisible = isLoading
+            binding.recyclerViewTiles.isVisible = !isLoading
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                viewModel.clearError()
+            }
         }
 
         viewModel.timer.observe(viewLifecycleOwner) { seconds ->
@@ -94,16 +138,39 @@ class GameFragment : Fragment() {
 
         viewModel.isGameWon.observe(viewLifecycleOwner) { isWon ->
             if (isWon) {
-                showWinDialog()
+
             }
         }
 
         viewModel.gridSize.observe(viewLifecycleOwner) { size ->
             (binding.recyclerViewTiles.layoutManager as? GridLayoutManager)?.spanCount = size
         }
+
+        viewModel.playWinSound.observe(viewLifecycleOwner) { play ->
+            if (play) {
+                soundManager.playWinSound()
+            }
+        }
+
+        viewModel.zoomImage.observe(viewLifecycleOwner) { zoom ->
+            if (zoom) {
+                animateImageZoom()
+            }
+        }
+
+        viewModel.showWinDialog.observe(viewLifecycleOwner) { show ->
+            if (show) {
+                showWinDialog()
+                viewModel.onWinDialogShown()
+            }
+        }
     }
 
     private fun setupListeners() {
+        binding.buttonHint.setOnClickListener {
+            viewModel.showHint()
+        }
+
         binding.buttonRestart.setOnClickListener {
             viewModel.resetGame()
         }
@@ -122,12 +189,14 @@ class GameFragment : Fragment() {
             resources,
             R.drawable.game1
         )
-        viewModel.setImageBitmap(bitmap, 3)
+        viewModel.setImageBitmap(bitmap, 6)
     }
 
     private fun loadImageFromUri(uri: Uri) {
+        var loadedBitmap: Bitmap? = null
+
         try {
-            val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            loadedBitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
                 val source = android.graphics.ImageDecoder.createSource(
                     requireContext().contentResolver,
                     uri
@@ -138,30 +207,19 @@ class GameFragment : Fragment() {
                 MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
             }
 
-            val maxSize = 1000
-            val scaledBitmap = if (bitmap.width > maxSize || bitmap.height > maxSize) {
-                val size = maxOf(bitmap.width, bitmap.height)
-                val scale = maxSize.toFloat() / size
-                Bitmap.createScaledBitmap(
-                    bitmap,
-                    (bitmap.width * scale).toInt(),
-                    (bitmap.height * scale).toInt(),
-                    true
-                )
-            } else {
-                bitmap
-            }
+            viewModel.setImageBitmap(loadedBitmap, viewModel.gridSize.value ?: 3)
 
-            viewModel.setImageBitmap(scaledBitmap, viewModel.gridSize.value ?: 3)
+            loadedBitmap?.recycle()
 
         } catch (e: IOException) {
             e.printStackTrace()
-            showError("Failed to load image")
+            loadedBitmap?.recycle()
+            showError("Failed to load image: ${e.message}")
         }
     }
 
     private fun showGridSizeDialog() {
-        val sizes = arrayOf("3x3", "4x4", "5x5", "6x6")
+        val sizes = arrayOf("3x3", "4x4", "5x5", "6x6", "7x7", "8x8")
         val currentGridSize = viewModel.gridSize.value ?: 3
         val currentIndex = currentGridSize - 3
 
@@ -169,7 +227,6 @@ class GameFragment : Fragment() {
             .setTitle("Select Grid Size")
             .setSingleChoiceItems(sizes, currentIndex) { dialog, which ->
                 val gridSize = which + 3
-
                 val currentBitmap = BitmapFactory.decodeResource(
                     resources,
                     R.drawable.game1
@@ -181,22 +238,41 @@ class GameFragment : Fragment() {
             .show()
     }
 
+    private fun animateImageZoom() {
+        binding.recyclerViewTiles.animate()
+            .scaleX(1.05f)
+            .scaleY(1.05f)
+            .setDuration(300)
+            .withEndAction {
+                binding.recyclerViewTiles.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(300)
+                    .start()
+            }
+            .start()
+    }
+
     private fun showWinDialog() {
         val time = viewModel.timer.value ?: 0L
         val moves = viewModel.moves.value ?: 0
+        val gridSize = viewModel.gridSize.value ?: 3
 
-        val minutes = time / 60
-        val seconds = time % 60
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("🎉 Puzzle Solved!")
-            .setMessage("Time: ${String.format("%02d:%02d", minutes, seconds)}\nMoves: $moves")
-            .setCancelable(false)
-            .setPositiveButton("New Game") { _, _ ->
+        val dialog = WinDialogFragment.newInstance(
+            time = time,
+            moves = moves,
+            gridSize = gridSize,
+            onNewGame = {
                 viewModel.resetGame()
+            },
+            onClose = {
+                findNavController().navigate(
+                    R.id.action_gameFragment_to_galleryFragment
+                )
             }
-            .setNegativeButton("Close", null)
-            .show()
+        )
+
+        dialog.show(childFragmentManager, "WinDialog")
     }
 
     private fun showError(message: String) {
@@ -207,8 +283,23 @@ class GameFragment : Fragment() {
             .show()
     }
 
+    private fun recreateAdapter(bitmap: Bitmap, gridSize: Int) {
+        tileAdapter = TileAdapter { position ->
+            soundManager.playClickSound()
+            viewModel.rotateTile(position)
+        }
+        binding.recyclerViewTiles.adapter = tileAdapter
+
+        viewModel.tiles.value?.let { tiles ->
+            tileAdapter.submitList(tiles)
+        }
+
+        (binding.recyclerViewTiles.layoutManager as? GridLayoutManager)?.spanCount = gridSize
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        soundManager.release()
         _binding = null
     }
 }

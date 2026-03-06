@@ -19,17 +19,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/text_moves"
+    <LinearLayout
+        android:id="@+id/stats_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Moves: 0"
-        android:textColor="@android:color/black"
-        android:textSize="16sp"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_timer" />
+        app:layout_constraintTop_toBottomOf="@id/text_timer">
+
+        <TextView
+            android:id="@+id/text_moves"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Moves: 0"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/text_wrong_tiles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wrong: 9"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="16sp" />
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/button_container"
@@ -39,7 +56,16 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_moves">
+        app:layout_constraintTop_toBottomOf="@id/stats_container">
+
+        <Button
+            android:id="@+id/button_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/holo_orange_dark"
+            android:text="💡 Hint"
+            android:textColor="@android:color/white"
+            android:layout_marginEnd="8dp" />
 
         <Button
             android:id="@+id/button_select_image"
@@ -59,6 +85,16 @@
             android:textColor="@android:color/white" />
 
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/recycler_view_tiles"
+        app:layout_constraintEnd_toEndOf="@id/recycler_view_tiles"
+        app:layout_constraintStart_toStartOf="@id/recycler_view_tiles"
+        app:layout_constraintTop_toTopOf="@id/recycler_view_tiles" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_tiles"

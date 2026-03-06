@@ -1,5 +1,7 @@
 package com.example.picturepuzzle.ui.game
 
+import android.graphics.Color
+import android.graphics.PorterDuff
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -10,6 +12,8 @@ import com.example.picturepuzzle.databinding.ItemTileBinding
 class TileAdapter(
     private val onTileClick: (Int) -> Unit
 ) : ListAdapter<Tile, TileAdapter.TileViewHolder>(TileDiffCallback()) {
+
+    private var hintTiles: Set<Int> = emptySet()
 
     class TileDiffCallback : DiffUtil.ItemCallback<Tile>() {
         override fun areItemsTheSame(oldItem: Tile, newItem: Tile): Boolean {
@@ -29,6 +33,11 @@ class TileAdapter(
         }
     }
 
+    fun setHintTiles(hints: Set<Int>) {
+        hintTiles = hints
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TileViewHolder {
         val binding = ItemTileBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -39,7 +48,7 @@ class TileAdapter(
     }
 
     override fun onBindViewHolder(holder: TileViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(getItem(position), position in hintTiles)
     }
 
     override fun onBindViewHolder(holder: TileViewHolder, position: Int, payloads: MutableList<Any>) {
@@ -63,9 +72,16 @@ class TileAdapter(
             }
         }
 
-        fun bind(tile: Tile) {
+        fun bind(tile: Tile, isHint: Boolean) {
             binding.tileImageView.setImageBitmap(tile.bitmap)
             binding.tileImageView.rotation = tile.currentRotation.toFloat()
+
+            // Highlight nếu là hint
+            if (isHint) {
+                binding.tileImageView.setColorFilter(Color.argb(100, 255, 255, 0), PorterDuff.Mode.SRC_ATOP)
+            } else {
+                binding.tileImageView.clearColorFilter()
+            }
         }
 
         fun animateRotation(newRotation: Int) {

@@ -1,23 +1,25 @@
 package com.example.picturepuzzle.ui.game
 
-import android.app.Application
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
-import com.example.picturepuzzle.R
-import com.example.picturepuzzle.data.database.AppDatabase
+import android.util.Log
+import androidx.lifecycle.*
 import com.example.picturepuzzle.data.database.ScoreEntity
+import com.example.picturepuzzle.data.repository.ImageRepository
 import com.example.picturepuzzle.data.repository.ScoreRepository
+import com.example.picturepuzzle.utils.ImageProcessor
+import com.example.picturepuzzle.utils.PreparedImage
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class GameViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val repository: ScoreRepository
+@HiltViewModel
+class GameViewModel @Inject constructor(
+    private val scoreRepository: ScoreRepository,
+    private val imageRepository: ImageRepository,
+    private val imageProcessor: ImageProcessor
+) : ViewModel() {
 
     private val _tiles = MutableLiveData<List<Tile>>()
     val tiles: LiveData<List<Tile>> = _tiles
@@ -34,58 +36,87 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _gridSize = MutableLiveData<Int>(3)
     val gridSize: LiveData<Int> = _gridSize
 
+    private val _wrongTilesCount = MutableLiveData<Int>(0)
+    val wrongTilesCount: LiveData<Int> = _wrongTilesCount
+
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _hintTiles = MutableLiveData<Set<Int>>()
+    val hintTiles: LiveData<Set<Int>> = _hintTiles
+
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> = _error
+
+    private val _showWinDialog = MutableLiveData<Boolean>(false)
+    val showWinDialog: LiveData<Boolean> = _showWinDialog
+
+    private val _playWinSound = MutableLiveData<Boolean>(false)
+    val playWinSound: LiveData<Boolean> = _playWinSound
+
+    private val _zoomImage = MutableLiveData<Boolean>(false)
+    val zoomImage: LiveData<Boolean> = _zoomImage
+
+    private val _sourceBitmap = MutableLiveData<Bitmap?>()
+    val sourceBitmap: LiveData<Bitmap?> = _sourceBitmap
+
     private var timerJob: Job? = null
     private var isTimerRunning = false
-
-    private var selectedBitmap: Bitmap? = null
     private var isProcessingClick = false
 
-    init {
-        val scoreDao = AppDatabase.getDatabase(application).scoreDao()
-        repository = ScoreRepository(scoreDao)
-    }
+    private var currentPreparedImage: PreparedImage? = null
+    private val _currentImageId = MutableLiveData<Int?>()
 
     fun setImageBitmap(bitmap: Bitmap, gridSize: Int = 3) {
-        // Crop to square first
-        val squareBitmap = cropToSquare(bitmap)
-        selectedBitmap = squareBitmap
-        _gridSize.value = gridSize
-        initializeGame()
-    }
 
-    private fun cropToSquare(bitmap: Bitmap): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
-        val size = minOf(width, height)
+        _sourceBitmap.value = bitmap
 
-        val x = (width - size) / 2
-        val y = (height - size) / 2
+        viewModelScope.launch {
 
-        return Bitmap.createBitmap(bitmap, x, y, size, size)
-    }
+            _isLoading.value = true
+            _error.value = null
 
-    fun initializeGame() {
-        val bitmap = selectedBitmap ?: run {
-            val defaultBitmap = BitmapFactory.decodeResource(
-                getApplication<Application>().resources,
-                R.drawable.game1
-            )
-            val squareBitmap = cropToSquare(defaultBitmap)
-            selectedBitmap = squareBitmap
-            squareBitmap
+            try {
+
+                Log.d("GameViewModel", "Starting image preparation")
+
+                val prepared = imageProcessor.prepareImageForGame(bitmap, gridSize)
+
+                currentPreparedImage?.recycleIntermediateBitmaps()
+
+                currentPreparedImage = prepared
+                _gridSize.value = gridSize
+
+                initializeGame()
+
+            } catch (e: Exception) {
+
+                Log.e("GameViewModel", "Error preparing image", e)
+                _error.value = e.message
+
+            } finally {
+
+                _isLoading.value = false
+
+            }
         }
+    }
 
-        val size = _gridSize.value ?: 3
-        val tileBitmaps = splitBitmap(bitmap, size)
+    private fun initializeGame() {
+
+        val prepared = currentPreparedImage ?: return
+
         val tileList = mutableListOf<Tile>()
         val rotations = listOf(0, 90, 180, 270)
 
-        for (i in tileBitmaps.indices) {
+        for (i in prepared.tiles.indices) {
+
             val randomRotation = rotations.random()
+
             tileList.add(
                 Tile(
                     id = i,
-                    bitmap = tileBitmaps[i],
+                    bitmap = prepared.tiles[i],
                     currentRotation = randomRotation,
                     correctRotation = 0
                 )
@@ -93,116 +124,206 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         _tiles.value = tileList
-        _timer.value = 0L
+        _timer.value = 0
         _moves.value = 0
         _isGameWon.value = false
         isProcessingClick = false
+
+        updateWrongTilesCount()
         startTimer()
     }
 
-    private fun splitBitmap(bitmap: Bitmap, gridSize: Int): List<Bitmap> {
-        val tiles = mutableListOf<Bitmap>()
-        val squareSize = bitmap.width // Bitmap đã là hình vuông
-        val tileSize = squareSize / gridSize
-
-        for (row in 0 until gridSize) {
-            for (col in 0 until gridSize) {
-                val x = col * tileSize
-                val y = row * tileSize
-
-                // Đảm bảo không vượt quá bounds
-                val actualWidth = minOf(tileSize, squareSize - x)
-                val actualHeight = minOf(tileSize, squareSize - y)
-
-                val tileBitmap = Bitmap.createBitmap(
-                    bitmap,
-                    x,
-                    y,
-                    actualWidth,
-                    actualHeight
-                )
-                tiles.add(tileBitmap)
-            }
-        }
-
-        return tiles
-    }
-
     private fun startTimer() {
+
         if (isTimerRunning) return
+
         isTimerRunning = true
 
         timerJob = viewModelScope.launch {
+
             while (isTimerRunning) {
-                delay(1000L)
-                _timer.value = (_timer.value ?: 0L) + 1L
+
+                delay(1000)
+
+                _timer.value = (_timer.value ?: 0) + 1
+
             }
         }
     }
 
     fun stopTimer() {
+
         isTimerRunning = false
         timerJob?.cancel()
+
     }
 
     fun rotateTile(position: Int) {
+
         if (_isGameWon.value == true || isProcessingClick) return
 
         isProcessingClick = true
 
         val currentList = _tiles.value?.toMutableList() ?: return
-        if (position < 0 || position >= currentList.size) {
+
+        if (position !in currentList.indices) {
+
             isProcessingClick = false
             return
+
         }
 
         val tile = currentList[position]
 
-        // Tạo bản sao mới với rotation updated
-        val updatedTile = tile.copy(currentRotation = (tile.currentRotation + 90) % 360)
+        val updatedTile = tile.copy(
+            currentRotation = (tile.currentRotation + 90) % 360
+        )
+
         currentList[position] = updatedTile
 
         _tiles.value = currentList
+
         _moves.value = (_moves.value ?: 0) + 1
 
         viewModelScope.launch {
-            delay(200) // Đợi animation
+
+            delay(200)
+
             isProcessingClick = false
+
+            updateWrongTilesCount()
+
             checkWin()
+
+        }
+    }
+
+    private fun updateWrongTilesCount() {
+
+        val wrongCount = _tiles.value?.count {
+            it.currentRotation != it.correctRotation
+        } ?: 0
+
+        _wrongTilesCount.value = wrongCount
+
+    }
+
+    fun showHint() {
+
+        val wrongTiles = _tiles.value?.mapIndexedNotNull { index, tile ->
+
+            if (tile.currentRotation != tile.correctRotation) index else null
+
+        }?.toSet() ?: emptySet()
+
+        _hintTiles.value = wrongTiles
+
+        viewModelScope.launch {
+
+            delay(2000)
+
+            _hintTiles.value = emptySet()
+
         }
     }
 
     private fun checkWin() {
+
         val allTilesCorrect = _tiles.value?.all {
             it.currentRotation == it.correctRotation
         } ?: false
 
         if (allTilesCorrect) {
+
             _isGameWon.value = true
+
             stopTimer()
+
+            _playWinSound.value = true
+            _zoomImage.value = true
+
             saveScore()
+
+            viewModelScope.launch {
+
+                delay(500)
+
+                _showWinDialog.value = true
+
+            }
         }
     }
 
+    fun onWinDialogShown() {
+
+        _showWinDialog.value = false
+        _playWinSound.value = false
+        _zoomImage.value = false
+
+    }
+
+    fun setCurrentImageId(imageId: Int?) {
+
+        _currentImageId.value = imageId
+
+    }
+
     private fun saveScore() {
+
         viewModelScope.launch {
+
             val score = ScoreEntity(
-                bestTime = _timer.value ?: 0L,
+                bestTime = _timer.value ?: 0,
                 bestMoves = _moves.value ?: 0,
                 date = System.currentTimeMillis()
             )
-            repository.insertScore(score)
+
+            scoreRepository.insertScore(score)
+
+            _currentImageId.value?.let { imageId ->
+
+                imageRepository.markImageCompleted(
+                    imageId = imageId,
+                    time = _timer.value ?: 0,
+                    moves = _moves.value ?: 0,
+                    gridSize = _gridSize.value ?: 3
+                )
+            }
         }
     }
 
     fun resetGame() {
+
         stopTimer()
         initializeGame()
+
+    }
+
+    fun clearError() {
+
+        _error.value = null
+
     }
 
     override fun onCleared() {
+
         super.onCleared()
+
         stopTimer()
-        selectedBitmap?.recycle()
+
+        currentPreparedImage?.let { prepared ->
+
+            prepared.tiles.forEach {
+
+                if (!it.isRecycled) it.recycle()
+
+            }
+
+            prepared.recycleIntermediateBitmaps()
+            prepared.adjustedBitmap.recycle()
+
+        }
+
+        currentPreparedImage = null
     }
 }

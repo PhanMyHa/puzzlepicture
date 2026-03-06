@@ -5,10 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ScoreEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [ScoreEntity::class, CompletedImageEntity::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun scoreDao(): ScoreDao
+    abstract fun completedImageDao(): CompletedImageDao
 
     companion object {
         @Volatile
@@ -20,7 +25,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "puzzle_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // For development
+                    .build()
                 INSTANCE = instance
                 instance
             }
