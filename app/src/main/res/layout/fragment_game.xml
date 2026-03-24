@@ -2,124 +2,213 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/game_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/bg_light"
     android:padding="16dp">
 
+    <!-- Title -->
     <TextView
-        android:id="@+id/text_timer"
+        android:id="@+id/text_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="00:00"
-        android:textColor="@android:color/black"
-        android:textSize="20sp"
+        android:text="🎯 Picture Puzzle"
+        android:textColor="@color/text_primary"
+        android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
+    <!-- Stats Row -->
     <LinearLayout
-        android:id="@+id/stats_container"
-        android:layout_width="wrap_content"
+        android:id="@+id/stats_row"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:weightSum="3"
+        app:layout_constraintTop_toBottomOf="@id/text_title"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_timer">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
-            android:id="@+id/text_moves"
-            android:layout_width="wrap_content"
+        <com.google.android.material.card.MaterialCardView
+            style="@style/StatCard"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Moves: 0"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:layout_marginEnd="16dp" />
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp">
 
-        <TextView
-            android:id="@+id/text_wrong_tiles"
-            android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:text="⏱ Time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+                <TextView
+                    android:id="@+id/text_timer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/StatCard"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Wrong: 9"
-            android:textColor="@android:color/holo_red_dark"
-            android:textSize="16sp" />
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:text="🔄 Moves"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+                <TextView
+                    android:id="@+id/text_moves"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/StatCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:text="❌ Wrong"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+                <TextView
+                    android:id="@+id/text_wrong_tiles"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/danger"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
+    <!-- Action Buttons -->
     <LinearLayout
-        android:id="@+id/button_container"
-        android:layout_width="wrap_content"
+        android:id="@+id/action_row"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:weightSum="4"
+        app:layout_constraintTop_toBottomOf="@id/stats_row"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/stats_container">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/button_hint"
-            android:layout_width="wrap_content"
+            style="@style/AppButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:backgroundTint="@android:color/holo_orange_dark"
-            android:text="💡 Hint"
+            android:layout_weight="1"
+            android:text="💡Hint"
+            android:backgroundTint="@color/secondary"
             android:textColor="@android:color/white"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="3dp"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_restart"
+            style="@style/AppButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Restart"
+            android:backgroundTint="@color/primary"
+            android:textColor="@android:color/white"
+            android:layout_marginEnd="1dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_exit_game"
+            style="@style/AppButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Exit"
+            android:backgroundTint="@color/danger"
+            android:textColor="@android:color/white"
+            android:layout_marginEnd="6dp"/>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/button_select_image"
-            android:layout_width="wrap_content"
+            style="@style/AppButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:backgroundTint="@android:color/black"
-            android:text="Select Image"
-            android:textColor="@android:color/white"
-            android:layout_marginEnd="8dp" />
-
-        <Button
-            android:id="@+id/button_grid_size"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@android:color/black"
-            android:text="Grid Size"
-            android:textColor="@android:color/white" />
-
+            android:layout_weight="1"
+            android:text="Image"
+            android:backgroundTint="@color/primary_variant"
+            android:textColor="@android:color/white"/>
     </LinearLayout>
+
+    <!-- Puzzle Board -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/board_card"
+        style="@style/AppCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/action_row"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view_tiles"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"/>
+
+    </com.google.android.material.card.MaterialCardView>
 
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/recycler_view_tiles"
-        app:layout_constraintEnd_toEndOf="@id/recycler_view_tiles"
-        app:layout_constraintStart_toStartOf="@id/recycler_view_tiles"
-        app:layout_constraintTop_toTopOf="@id/recycler_view_tiles" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view_tiles"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:clipToPadding="false"
-        android:padding="0dp"
-        app:layout_constraintBottom_toTopOf="@id/button_restart"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/button_container"
-        app:layout_constraintWidth_percent="0.95" />
-
-    <Button
-        android:id="@+id/button_restart"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="@android:color/black"
-        android:text="Restart"
-        android:textColor="@android:color/white"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/board_card"
+        app:layout_constraintBottom_toBottomOf="@id/board_card"
+        app:layout_constraintStart_toStartOf="@id/board_card"
+        app:layout_constraintEnd_toEndOf="@id/board_card"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

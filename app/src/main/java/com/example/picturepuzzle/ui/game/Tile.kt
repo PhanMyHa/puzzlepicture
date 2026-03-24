@@ -4,11 +4,10 @@ import android.graphics.Bitmap
 
 data class Tile(
     val id: Int,
-    val bitmap: Bitmap, // Reference, không copy
+    val bitmap: Bitmap,
     var currentRotation: Int = 0,
     val correctRotation: Int = 0
 ) {
-    // Override equals và hashCode để không so sánh bitmap
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -29,6 +28,5 @@ data class Tile(
         return result
     }
 
-    // Data class tự động tạo copy() method, không cần định nghĩa thủ công
-    // copy() sẽ CHỈ copy reference của bitmap, không tạo bitmap mới
+
 }

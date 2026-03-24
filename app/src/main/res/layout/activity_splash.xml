@@ -39,8 +39,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="🧩 Welcome to Picture Puzzle
-Rotate the pieces, solve the image, and challenge your mind."
+        android:text="🧩 Welcome to Picture Puzzle"
         android:textColor="@android:color/darker_gray"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/text_app_name"
@@ -60,7 +59,6 @@ Rotate the pieces, solve the image, and challenge your mind."
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Progress Bar -->
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"

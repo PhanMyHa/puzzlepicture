@@ -25,11 +25,9 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun setupAnimations() {
-        // Fade in logo
         val fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in)
         binding.imageAppLogo.startAnimation(fadeIn)
 
-        // Scale animation
         binding.imageAppLogo.animate()
             .scaleX(1.1f)
             .scaleY(1.1f)
@@ -43,7 +41,6 @@ class SplashActivity : AppCompatActivity() {
             }
             .start()
 
-        // Fade in text
         binding.textAppName.alpha = 0f
         binding.textAppName.animate()
             .alpha(1f)

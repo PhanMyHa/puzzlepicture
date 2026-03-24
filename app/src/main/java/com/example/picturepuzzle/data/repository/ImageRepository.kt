@@ -32,8 +32,6 @@ class ImageRepository(private val completedImageDao: CompletedImageDao) {
             ImageItem(14, ImageCategory.ART, R.drawable.art_4, "Colorful"),
             ImageItem(15, ImageCategory.ART, R.drawable.art_5, "Modern Art"),
 
-
-
             // Food
             ImageItem(21, ImageCategory.FOOD, R.drawable.food_1, "Sushi"),
             ImageItem(22, ImageCategory.FOOD, R.drawable.food_2, "Pizza"),
@@ -54,10 +52,10 @@ class ImageRepository(private val completedImageDao: CompletedImageDao) {
     suspend fun markImageCompleted(imageId: Int, time: Long, moves: Int, gridSize: Int) {
         val entity = CompletedImageEntity(
             imageId = imageId,
+            gridSize = gridSize,
             completedAt = System.currentTimeMillis(),
             bestTime = time,
-            bestMoves = moves,
-            gridSize = gridSize
+            bestMoves = moves
         )
         completedImageDao.insertCompletedImage(entity)
     }
@@ -66,8 +64,12 @@ class ImageRepository(private val completedImageDao: CompletedImageDao) {
         return completedImageDao.getCompletedImageIds()
     }
 
-    fun getCompletedImage(imageId: Int): LiveData<CompletedImageEntity?> {
-        return completedImageDao.getCompletedImage(imageId)
+    suspend fun getCompletedLevels(imageId: Int): List<Int> {
+        return completedImageDao.getCompletedLevels(imageId)
+    }
+
+    fun getCompletedImage(imageId: Int, gridSize: Int): LiveData<CompletedImageEntity?> {
+        return completedImageDao.getCompletedImage(imageId, gridSize)
     }
 
     fun getAllCompletedImages(): LiveData<List<CompletedImageEntity>> {

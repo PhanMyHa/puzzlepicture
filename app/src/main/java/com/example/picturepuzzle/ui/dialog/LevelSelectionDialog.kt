@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.example.picturepuzzle.R
 import com.example.picturepuzzle.databinding.DialogLevelSelectionBinding
 
 class LevelSelectionDialog : DialogFragment() {
@@ -18,16 +17,19 @@ class LevelSelectionDialog : DialogFragment() {
     private var imageRes: Int = 0
     private var imageId: Int = 0
     private var imageName: String = ""
+    private var completedLevels: Set<Int> = emptySet()
 
     companion object {
         private const val ARG_IMAGE_RES = "image_res"
         private const val ARG_IMAGE_ID = "image_id"
         private const val ARG_IMAGE_NAME = "image_name"
+        private const val ARG_COMPLETED_LEVELS = "completed_levels"
 
         fun newInstance(
             imageRes: Int,
             imageId: Int,
             imageName: String,
+            completedLevels: Set<Int>,
             onLevelSelected: (Int) -> Unit
         ): LevelSelectionDialog {
             return LevelSelectionDialog().apply {
@@ -35,6 +37,7 @@ class LevelSelectionDialog : DialogFragment() {
                     putInt(ARG_IMAGE_RES, imageRes)
                     putInt(ARG_IMAGE_ID, imageId)
                     putString(ARG_IMAGE_NAME, imageName)
+                    putIntegerArrayList(ARG_COMPLETED_LEVELS, ArrayList(completedLevels))
                 }
                 this.onLevelSelected = onLevelSelected
             }
@@ -56,6 +59,7 @@ class LevelSelectionDialog : DialogFragment() {
         imageRes = arguments?.getInt(ARG_IMAGE_RES) ?: 0
         imageId = arguments?.getInt(ARG_IMAGE_ID) ?: 0
         imageName = arguments?.getString(ARG_IMAGE_NAME) ?: ""
+        completedLevels = arguments?.getIntegerArrayList(ARG_COMPLETED_LEVELS)?.toSet() ?: emptySet()
 
         setupViews()
         setupListeners()
@@ -70,6 +74,15 @@ class LevelSelectionDialog : DialogFragment() {
     private fun setupViews() {
         binding.imagePreview.setImageResource(imageRes)
         binding.textImageName.text = imageName
+
+        updateLevelButton(binding.buttonEasy, 3, "🟢 Easy (3x3)")
+        updateLevelButton(binding.buttonMedium, 4, "🟡 Medium (4x4)")
+        updateLevelButton(binding.buttonHard, 5, "🔴 Hard (5x5)")
+        updateLevelButton(binding.buttonExpert, 6, "⚫ Expert (6x6)")
+    }
+
+    private fun updateLevelButton(button: android.widget.Button, gridSize: Int, baseText: String) {
+        button.text = if (completedLevels.contains(gridSize)) "$baseText  ✅" else baseText
     }
 
     private fun setupListeners() {

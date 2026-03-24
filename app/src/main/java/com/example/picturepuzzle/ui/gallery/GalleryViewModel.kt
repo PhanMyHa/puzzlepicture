@@ -52,4 +52,8 @@ class GalleryViewModel @Inject constructor(
     fun refreshCompletedImages() {
         loadCompletedImages()
     }
+
+    suspend fun getCompletedLevels(imageId: Int): Set<Int> {
+        return imageRepository.getCompletedLevels(imageId).toSet()
+    }
 }

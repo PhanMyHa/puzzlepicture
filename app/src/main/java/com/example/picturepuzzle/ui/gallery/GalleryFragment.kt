@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.picturepuzzle.R
@@ -13,6 +14,7 @@ import com.example.picturepuzzle.data.model.ImageCategory
 import com.example.picturepuzzle.databinding.FragmentGalleryBinding
 import com.example.picturepuzzle.ui.dialog.LevelSelectionDialog
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class GalleryFragment : Fragment() {
@@ -93,15 +95,20 @@ class GalleryFragment : Fragment() {
     }
 
     private fun showLevelSelectionDialog(imageItem: com.example.picturepuzzle.data.model.ImageItem) {
-        val dialog = LevelSelectionDialog.newInstance(
-            imageRes = imageItem.imageRes,
-            imageId = imageItem.id,
-            imageName = imageItem.name
-        ) { gridSize ->
-            navigateToGame(imageItem.imageRes, imageItem.id, gridSize)
-        }
+        lifecycleScope.launch {
+            val completedLevels = viewModel.getCompletedLevels(imageItem.id)
 
-        dialog.show(childFragmentManager, "LevelSelection")
+            val dialog = LevelSelectionDialog.newInstance(
+                imageRes = imageItem.imageRes,
+                imageId = imageItem.id,
+                imageName = imageItem.name,
+                completedLevels = completedLevels
+            ) { gridSize ->
+                navigateToGame(imageItem.imageRes, imageItem.id, gridSize)
+            }
+
+            dialog.show(childFragmentManager, "LevelSelection")
+        }
     }
 
     private fun navigateToGame(imageRes: Int, imageId: Int, gridSize: Int) {

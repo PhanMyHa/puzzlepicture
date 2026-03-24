@@ -78,16 +78,14 @@ class WinDialogFragment : DialogFragment() {
         binding.textMoves.text = "$moves moves"
         binding.textGridSize.text = "${gridSize}x${gridSize} grid"
 
-        // Start Lottie animation
+
         binding.lottieAnimation.playAnimation()
     }
 
     private fun setupAnimations() {
-        // Bounce animation cho container
         val bounceAnim = AnimationUtils.loadAnimation(requireContext(), R.anim.bounce)
         binding.contentContainer.startAnimation(bounceAnim)
 
-        // Fade in cho texts
         binding.textCongrats.alpha = 0f
         binding.textCongrats.animate()
             .alpha(1f)
