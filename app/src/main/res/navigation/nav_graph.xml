@@ -2,78 +2,16 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/galleryFragment">
+    app:startDestination="@id/auth_nav_graph">
 
-    <!-- Gallery -->
-    <fragment
-        android:id="@+id/galleryFragment"
-        android:name="com.example.picturepuzzle.ui.gallery.GalleryFragment"
-        android:label="Gallery">
+    <include app:graph="@navigation/auth_nav_graph" />
 
-        <action
-            android:id="@+id/action_galleryFragment_to_gameFragment"
-            app:destination="@id/gameFragment"
-            app:launchSingleTop="true"
-            app:popUpTo="@id/galleryFragment"
-            app:popUpToInclusive="false" />
+    <include app:graph="@navigation/main_nav_graph" />
 
-    </fragment>
-
-
-    <!-- Game -->
-    <fragment
-        android:id="@+id/gameFragment"
-        android:name="com.example.picturepuzzle.ui.game.GameFragment"
-        android:label="Game">
-
-        <argument
-            android:name="imageRes"
-            android:defaultValue="-1"
-            app:argType="integer" />
-
-        <argument
-            android:name="imageId"
-            android:defaultValue="-1"
-            app:argType="integer" />
-
-        <argument
-            android:name="gridSize"
-            android:defaultValue="3"
-            app:argType="integer" />
-
-        <action
-            android:id="@+id/action_gameFragment_to_galleryFragment"
-            app:destination="@id/galleryFragment"
-            app:popUpTo="@id/galleryFragment"
-            app:popUpToInclusive="false" />
-
-    </fragment>
-
-
-    <!-- Home -->
-    <fragment
-        android:id="@+id/homeFragment"
-        android:name="com.example.picturepuzzle.ui.home.HomeFragment"
-        android:label="Home">
-
-        <action
-            android:id="@+id/action_homeFragment_to_gameFragment"
-            app:destination="@id/gameFragment" />
-
-    </fragment>
-
-
-    <!-- Profile -->
-    <fragment
-        android:id="@+id/profileFragment"
-        android:name="com.example.picturepuzzle.ui.profile.ProfileFragment"
-        android:label="Profile" />
-
-
-    <!-- Settings -->
-    <fragment
-        android:id="@+id/settingsFragment"
-        android:name="com.example.picturepuzzle.ui.settings.SettingsFragment"
-        android:label="Settings" />
+    <action
+        android:id="@+id/action_main_nav_graph_to_auth_nav_graph"
+        app:destination="@id/auth_nav_graph"
+        app:popUpTo="@id/main_nav_graph"
+        app:popUpToInclusive="true"/>
 
 </navigation>

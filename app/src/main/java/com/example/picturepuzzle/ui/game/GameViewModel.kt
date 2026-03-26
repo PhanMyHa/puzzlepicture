@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.*
 import com.example.picturepuzzle.data.database.ScoreEntity
+import com.example.picturepuzzle.data.firebase.RankRepository
 import com.example.picturepuzzle.data.repository.ImageRepository
 import com.example.picturepuzzle.data.repository.ScoreRepository
 import com.example.picturepuzzle.utils.ImageProcessor
@@ -18,7 +19,8 @@ import javax.inject.Inject
 class GameViewModel @Inject constructor(
     private val scoreRepository: ScoreRepository,
     private val imageRepository: ImageRepository,
-    private val imageProcessor: ImageProcessor
+    private val imageProcessor: ImageProcessor,
+    private val rankRepository: RankRepository
 ) : ViewModel() {
 
     private val _tiles = MutableLiveData<List<Tile>>()
@@ -59,6 +61,9 @@ class GameViewModel @Inject constructor(
 
     private val _sourceBitmap = MutableLiveData<Bitmap?>()
     val sourceBitmap: LiveData<Bitmap?> = _sourceBitmap
+
+    private val _remainingHints = MutableLiveData<Int>(3)
+    val remainingHints: LiveData<Int> = _remainingHints
 
     private var timerJob: Job? = null
     private var isTimerRunning = false
@@ -108,6 +113,7 @@ class GameViewModel @Inject constructor(
 
         val tileList = mutableListOf<Tile>()
         val rotations = listOf(0, 90, 180, 270)
+        _remainingHints.value = 3
 
         for (i in prepared.tiles.indices) {
 
@@ -209,21 +215,19 @@ class GameViewModel @Inject constructor(
     }
 
     fun showHint() {
+        val remaining = _remainingHints.value ?: 0
+        if (remaining <= 0) return
 
         val wrongTiles = _tiles.value?.mapIndexedNotNull { index, tile ->
-
             if (tile.currentRotation != tile.correctRotation) index else null
-
         }?.toSet() ?: emptySet()
 
         _hintTiles.value = wrongTiles
+        _remainingHints.value = remaining - 1
 
         viewModelScope.launch {
-
             delay(2000)
-
             _hintTiles.value = emptySet()
-
         }
     }
 
@@ -287,6 +291,13 @@ class GameViewModel @Inject constructor(
                     time = _timer.value ?: 0,
                     moves = _moves.value ?: 0,
                     gridSize = _gridSize.value ?: 3
+                )
+
+                rankRepository.submitScore(
+                    imageId = imageId,
+                    gridSize = _gridSize.value ?: 3,
+                    time = _timer.value ?: 0,
+                    moves = _moves.value ?: 0
                 )
             }
         }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1095946414512",
+    "project_id": "picturepuzzle-f816b",
+    "storage_bucket": "picturepuzzle-f816b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1095946414512:android:7d90aa63519015597e8e75",
+        "android_client_info": {
+          "package_name": "com.example.picturepuzzle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO1XO5RJ1squLkjligYpicD1hel9yC1dk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

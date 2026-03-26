@@ -107,6 +107,11 @@ class GameFragment : Fragment() {
             tileAdapter.setHintTiles(it)
         }
 
+        viewModel.remainingHints.observe(viewLifecycleOwner) { count ->
+            binding.buttonHint.text = "💡 Hint ($count)"
+            binding.buttonHint.isEnabled = count > 0
+        }
+
         viewModel.wrongTilesCount.observe(viewLifecycleOwner) {
             binding.textWrongTiles.text = "Wrong: $it"
         }
